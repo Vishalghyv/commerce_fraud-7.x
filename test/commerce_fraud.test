@@ -1,0 +1,68 @@
+<?php
+
+/**
+ * @file
+ * Unit tests for Commerce Fraud rules.
+ */
+
+/**
+ * Test fraud rules.
+ */
+
+class CommerceFraudRulesTest extends CommerceBaseTestCase {
+	/**
+	* Implementation of getInfo().
+	*/
+	public static function getInfo() {
+		return array(
+		  'name' => 'Fraud Rules',
+		  'description' => 'Test the rules provided by the Commerce Fraud module.',
+		  'group' => 'Drupal Commerce',
+		);
+	}
+	/**
+	* Set a random name.
+	*
+	* @param string $randomName
+	*/
+	public function setRandomName($randomName) {
+		$this->randomName = $randomName;
+	}
+
+	public function getRandomName() {
+		return $this->randomName;
+	}
+
+
+	function setUp() {
+		$modules = parent::setUpHelper('all');
+	    $modules[] = 'commerce_fraud';
+	    parent::setUp($modules);
+
+	    // User creation for different operations.
+	    $this->store_admin = $this->createStoreAdmin();
+	    $this->web_user = $this->drupalCreateUser(array('manage own card data'));
+
+	    // The rule that sends a mail after checkout completion should be disabled
+	    // as it returns an error caused by how mail messages are stored.
+	    $rules_config = rules_config_load('commerce_checkout_order_email');
+	    $rules_config->active = FALSE;
+	    $rules_config->save();
+
+	    // Setup a default user name.
+	    $this->setRandomName($this->randomName());
+	}
+
+	/**
+	* Test the default rule configuration functions.
+	*/
+	function testCommerceFraud() {
+		$user = $this->web_user;
+	    // Log in as normal user.
+	    $this->drupalLogin($user);
+	    $product = $this->createDummyProduct('TEST-PRODUCT', 'Test Product', 1025);
+	    $this->order = $this->createDummyOrder($user->uid, array($product->product_id => 1), 'completed');
+	    //Check Order Fraud Score
+	    $fraud_score = commerce_fraud_get_fraud_score_for_order_id($this->order->uid);
+	}
+}
