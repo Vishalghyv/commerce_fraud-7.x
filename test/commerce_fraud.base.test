@@ -1,0 +1,19 @@
+<?php
+/**
+ * @file
+ * Base facade for "Commerce Fraud" tests.
+ */
+
+/**
+ * Class CommerceFraudBaseTestCase.
+ */
+abstract class CommerceFraudBaseTestCase extends CommerceBaseTestCase {
+	
+	protected function setUp() {
+    parent::setUp(parent::setUpHelper('all', static::extraModules()));
+    // Make sure the migrations are registered.
+    migrate_static_registration();
+    // Run all test imports.
+    $this->migrate('import');
+  }
+}

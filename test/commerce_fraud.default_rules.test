@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Unit tests for Commerce Fraud rules.
+ */
+
+/**
+ * Test fraud rules.
+ */
+
+class CommerceFraudRulesTest extends CommerceBaseTestCase {
+	/**
+	* Implementation of getInfo().
+	*/
+	public static function getInfo() {
+		return array(
+		  'name' => 'Fraud Rules',
+		  'description' => 'Test the rules provided by the Commerce Fraud module.',
+		  'group' => 'Drupal Commerce',
+		);
+	}
+
+	function setUp() {
+		$modules = parent::setUpHelper('all');
+		parent::setUp($modules);
+	}
+	
+	
+}
