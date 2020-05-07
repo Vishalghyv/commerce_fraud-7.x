@@ -56,7 +56,7 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
 	/**
 	* Test the default rule configuration functions.
 	*/
-	function testCommerceFraud() {
+	public function testCommerceFraud() {
 		$user = $this->web_user;
 	    // Log in as normal user.
 	    $this->drupalLogin($user);
