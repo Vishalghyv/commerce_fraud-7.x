@@ -34,14 +34,16 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
 	}
 
 
-	function setUp() {
+	public function setUp() {
 		$modules = parent::setUpHelper('all');
 	    $modules[] = 'commerce_fraud';
 	    parent::setUp($modules);
 
 	    // User creation for different operations.
+	    $this->site_admin = $this->createSiteAdmin();
 	    $this->store_admin = $this->createStoreAdmin();
-	    $this->web_user = $this->drupalCreateUser(array('manage own card data'));
+	    $this->store_customer = $this->createStoreCustomer();
+	    $this->store_admin = $this->createStoreAdmin();
 
 	    // The rule that sends a mail after checkout completion should be disabled
 	    // as it returns an error caused by how mail messages are stored.
@@ -57,12 +59,20 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
 	* Test the default rule configuration functions.
 	*/
 	public function testCommerceFraud() {
-		$user = $this->web_user;
 	    // Log in as normal user.
-	    $this->drupalLogin($user);
-	    $product = $this->createDummyProduct('TEST-PRODUCT', 'Test Product', 1025);
-	    $this->order = $this->createDummyOrder($user->uid, array($product->product_id => 1), 'completed');
+	    $this->drupalLogin($this->store_customer);
+	    $this->createDummyProductDisplayContentType();
+	    // Create a $100 product.
+	    $product1 = $this->createDummyProduct('PROD-01', 'Product One', 100, 'USD');
+	    // Create a $50 product.
+	    $product2 = $this->createDummyProduct('PROD-02', 'Product Two', 50, 'USD');
+	    // Create a $50001 product.
+	    $product3 = $this->createDummyProduct('PROD-03', 'Product Three', 50001, 'USD');
+	    // Create an order with two products, total quantity 17.
+	    $order = $this->createDummyOrder(1, array($product3->product_id => 1),'complete');
+	    commerce_fraud_write_record($order,5);
 	    //Check Order Fraud Score
-	    $fraud_score = commerce_fraud_get_fraud_score_for_order_id($this->order->uid);
+	    $fraud_score = commerce_fraud_get_fraud_score_for_order_id($order->uid);
+	    $this->assertEqual($fraud_score,5);
 	}
 }
