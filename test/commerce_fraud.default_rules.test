@@ -20,11 +20,46 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
 		  'group' => 'Drupal Commerce',
 		);
 	}
+	/**
+	* Set a random name.
+	*
+	* @param string $randomName
+	*/
+	public function setRandomName($randomName) {
+		$this->randomName = $randomName;
+	}
+
+	public function getRandomName() {
+		return $this->randomName;
+	}
+
 
 	function setUp() {
 		$modules = parent::setUpHelper('all');
-		parent::setUp($modules);
+	    $modules[] = 'commerce_fraud';
+	    parent::setUp($modules);
+
+	    // User creation for different operations.
+	    $this->store_admin = $this->createStoreAdmin();
+	    $this->web_user = $this->drupalCreateUser(array('manage own card data'));
+
+	    // The rule that sends a mail after checkout completion should be disabled
+	    // as it returns an error caused by how mail messages are stored.
+	    $rules_config = rules_config_load('commerce_checkout_order_email');
+	    $rules_config->active = FALSE;
+	    $rules_config->save();
+
+	    // Setup a default user name.
+	    $this->setRandomName($this->randomName());
 	}
-	
-	
+
+
+
+	/**
+	* Test the default rule configuration functions.
+	*/
+	function testCommerceOrderCrud() {
+		// Ensure default rules configuration
+		$rules = $this->
+	}
 }
