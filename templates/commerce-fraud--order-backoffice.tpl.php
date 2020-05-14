@@ -1,3 +1,10 @@
+<?php
+
+/**
+ * @file
+ * Template.
+ */
+?>
 <div class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
   <div class="content"<?php print $content_attributes; ?>>
     <div class="content-left">

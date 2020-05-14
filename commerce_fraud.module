@@ -114,13 +114,29 @@ function commerce_fraud_theme_registry_alter(&$theme_registry) {
  * @return bool
  */
 function commerce_fraud_last_order($order, $minutes, $order_statuses = array('completed')) {
+
+  debug(commerce_fraud_timestamp_from_minutes($minutes));
   $query = db_select('commerce_order', 'o')
     ->fields('o', array('order_id'))
     ->condition('uid', $order->uid)
     ->condition('status', $order_statuses, 'IN')
-    ->condition('created', time() - ($minutes * 60), '>=');
+    ->condition('created', commerce_fraud_timestamp_from_minutes($minutes), '>=');
+  debug($query);
 
   return !empty($query->execute()->fetchAssoc());
+}
+
+/**
+ *
+ */
+function commerce_fraud_blacklist_send_email($order) {
+  if (commerce_fraud_is_blacklisted($order)) {
+    $from = 'test@gmail.com';
+    $to = 'test@gmail.com';
+    $subject = 'Blacklisted Order';
+    $body = commerce_fraud_get_fraud_notes_for_order($order->order_id);
+    simple_mail_queue($from, $to, $subject, $body);
+  }
 }
 
 /**
@@ -267,6 +283,22 @@ function commerce_fraud_is_blacklisted($order) {
 }
 
 /**
+ *
+ */
+function commerce_fraud_order_anonymous($order) {
+  if ($order->uid == 0) {
+    return TRUE;
+  }
+  elseif (!$order->uid) {
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+
+}
+
+/**
  * Checks the street address for a PO Box.
  *
  * @param $order
@@ -274,9 +306,19 @@ function commerce_fraud_is_blacklisted($order) {
  * @return bool
  */
 function commerce_fraud_order_has_pobox($order) {
-  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
-  $shipping_address = $order_wrapper->commerce_customer_shipping->commerce_customer_address;
-  return preg_match("/(p(.*)?o(.*?)?)(\s+)?(bo?x)?(\s+)?[#]?(\d+)?/i", $shipping_address->thoroughfare->value());
+
+  $wrapper = entity_metadata_wrapper('commerce_order', $order);
+  $shipping_address = $wrapper->commerce_customer_shipping->commerce_customer_address->value();
+  $address1 = $shipping_address['thoroughfare'];
+  debug($address1);
+  $address2 = $shipping_address['premise'];
+  debug($address2);
+  if (preg_match("/^\s*((?:P(?:OST)?.?\s*(?:O(?:FF(?:ICE)?)?)?.?\s*(?:B(?:IN|OX)?)+)+|(?:B(?:IN|OX)+\s+)+)\s*\d+/i", $address1)) {
+    return TRUE;
+  }
+  else {
+    return preg_match("/^\s*((?:P(?:OST)?.?\s*(?:O(?:FF(?:ICE)?)?)?.?\s*(?:B(?:IN|OX)?)+)+|(?:B(?:IN|OX)+\s+)+)\s*\d+/i", $address2);
+  }
 }
 
 /**
