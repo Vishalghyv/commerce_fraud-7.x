@@ -36,3 +36,14 @@ function commerce_fraud_admin_settings() {
 
   return system_settings_form($form);
 }
+
+/**
+ * Validation for Administration form for commerce_fraud.
+ */
+function commerce_fraud_admin_settings_validate($form, &$form_state) {
+  $greyListValue = $form_state['values']['commerce_fraud_greylist_cap'];
+  $blackListValue = $form_state['values']['commerce_fraud_blacklist_cap'];
+  if ($greyListValue >= $blackListValue) {
+    form_set_error('commerce_fraud_caps][commerce_fraud_greylist_cap', t('Grey List value cannot be equal to or more than Black List value'));
+  }
+}
