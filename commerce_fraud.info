@@ -6,8 +6,12 @@ package = Commerce (contrib)
 dependencies[] = commerce
 dependencies[] = commerce_order
 dependencies[] = rules
+dependencies[] = views
 
 configure = admin/commerce/config/fraud
 
 files[] = includes/views/views_handler_commerce_fraud_level.inc
 files[] = includes/views/views_handler_commerce_fraud_points.inc
+
+;Simple Tests
+files[] = tests/commerce_fraud.test

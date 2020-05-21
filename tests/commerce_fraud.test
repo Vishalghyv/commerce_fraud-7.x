@@ -1,0 +1,80 @@
+<?php
+
+/**
+ * @file
+ * Unit tests for Commerce Fraud rules.
+ */
+
+/**
+ * Test fraud rules.
+ */
+class CommerceFraudRulesTest extends CommerceBaseTestCase {
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Fraud Rules',
+      'description' => 'Test the rules provided by the Commerce Fraud module.',
+      'group' => 'Drupal Commerce',
+    );
+  }
+
+  /**
+   * Setup the testing.
+   */
+  protected function setUp() {
+    $modules = $this->setUpHelper('all', array('commerce_fraud'));
+    parent::setUp($modules);
+
+    // User creation for different operations.
+    $this->store_admin = $this->createStoreAdmin();
+
+    // The rule that sends a mail after checkout completion should be disabled
+    // as it returns an error caused by how mail messages are stored.
+    $rules_config = rules_config_load('commerce_checkout_order_email');
+    $rules_config->active = FALSE;
+    $rules_config->save();
+
+    variable_set('site_default_country', 'US');
+  }
+
+  /**
+   * Overrides CommerceBaseTestCase::permissionBuilder().
+   */
+  protected function permissionBuilder($set) {
+    $permissions = parent::permissionBuilder($set);
+
+    switch ($set) {
+      case 'store admin':
+        $permissions[] = 'administer frauds';
+        break;
+    }
+
+    return $permissions;
+  }
+
+  /**
+   * Tests general functions in commerce fraud.
+   */
+  public function testCommerceFraud() {
+    $this->drupalLogin($this->store_admin);
+    $this->createDummyProductDisplayContentType();
+    $product4 = $this->createDummyProduct('PROD-04', 'Product Four', 100, 'USD');
+    $new_order = $this->createDummyOrder(2, array($product4->product_id => 3), 'pending');
+    commerce_fraud_write_record($new_order, 39, 'Description of rule');
+    // Check Order Fraud Score.
+    $fraud_score = commerce_fraud_get_fraud_score_for_order_id($new_order->order_id);
+    // Two rules for quantity and price to be fired.
+    $this->assertEqual($fraud_score, 39);
+    $fraud_notes = commerce_fraud_get_fraud_notes_for_order($new_order->order_id);
+    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>39<br>Description of rule: 39'));
+    commerce_fraud_reset_fraud_count($new_order);
+    $fraud_score = commerce_fraud_get_fraud_score_for_order_id($new_order->order_id);
+    // Two rules for quantity and price to be fired.
+    $this->assertEqual($fraud_score, 0);
+    $fraud_notes = commerce_fraud_get_fraud_notes_for_order($new_order->order_id);
+    $this->assertEqual($fraud_notes, t('No potential fraudulent activity.'));
+  }
+
+}
