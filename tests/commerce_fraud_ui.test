@@ -1,0 +1,101 @@
+<?php
+
+/**
+ * @file
+ * Commerce customer profile tests.
+ */
+
+/**
+ * Functional tests for the commerce fraud UI module.
+ */
+class CommerceFraudUITest extends CommerceBaseTestCase {
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Fraud UI Rules',
+      'description' => 'Test the rules provided by the Commerce Fraud module.',
+      'group' => 'Drupal Commerce',
+    );
+  }
+
+  /**
+   * Set a random name.
+   *
+   * @param string $randomName
+   *   Assigns the random name.
+   */
+  public function setRandomName($randomName) {
+    $this->randomName = $randomName;
+  }
+
+  /**
+   * Get the random name.
+   */
+  public function getRandomName() {
+    return $this->randomName;
+  }
+
+  /**
+   * Overrides CommerceBaseTestCase::permissionBuilder().
+   */
+  protected function permissionBuilder($set) {
+    $permissions = parent::permissionBuilder($set);
+
+    switch ($set) {
+      case 'store admin':
+      case 'site admin':
+        $permissions[] = 'administer frauds';
+        break;
+    }
+
+    return $permissions;
+  }
+
+  /**
+   * Setup the testing.
+   */
+  function setUp() {
+    $modules = parent::setUpHelper('all');
+    $modules[] = 'commerce_fraud';
+    parent::setUp($modules);
+
+    // User creation for different operations.
+    $this->site_admin = $this->createSiteAdmin();
+    $this->store_admin = $this->createStoreAdmin();
+    $this->store_customer = $this->createStoreCustomer();
+
+    // The rule that sends a mail after checkout completion should be disabled
+    // as it returns an error caused by how mail messages are stored.
+    $rules_config = rules_config_load('commerce_checkout_order_email');
+    $rules_config->active = FALSE;
+    $rules_config->save();
+
+    // Setup a default user name.
+    $this->setRandomName($this->randomName());
+    variable_set('site_default_country', 'US');
+  }
+
+  /**
+   * Test function to test ui for commerce fraud module.
+   */
+  function testCommerceFraudUi() {
+    // Log in as store admin.
+    $this->drupalLogin($this->store_admin);
+
+    // Navigate to the fraud admin page.
+    $this->drupalGet('admin/commerce/config/fraud');
+    $this->assertResponse(200, t('Site admin user can configure the 
+      fraud settings'));
+    $this->assertFieldById('edit-commerce-fraud-greylist-cap', 10, t('GreyList display title field is present'));
+    $this->assertFieldById('edit-commerce-fraud-blacklist-cap', 20, t('BlackList display title field is present'));
+    $edit = array(
+      'commerce_fraud_greylist_cap' => t('20'),
+      'commerce_fraud_blacklist_cap' => t('30'),
+    );
+    $this->drupalPost(NULL, $edit, t('Save configuration'));
+  }
+
+}

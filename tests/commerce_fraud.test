@@ -1,0 +1,106 @@
+<?php
+
+/**
+ * @file
+ * Unit tests for Commerce Fraud rules.
+ */
+
+/**
+ * Test fraud rules.
+ */
+class CommerceFraudRulesTest extends CommerceBaseTestCase {
+
+  protected $randomName;
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Fraud Rules',
+      'description' => 'Test the rules provided by the Commerce Fraud module.',
+      'group' => 'Drupal Commerce',
+    );
+  }
+
+  /**
+   * Set a random name.
+   *
+   * @param string $randomName
+   *   Assigns the random name.
+   */
+  public function setRandomName($randomName) {
+    $this->randomName = $randomName;
+  }
+
+  /**
+   * Get the random name.
+   */
+  public function getRandomName() {
+    return $this->randomName;
+  }
+
+  /**
+   * Overrides CommerceBaseTestCase::permissionBuilder().
+   */
+  protected function permissionBuilder($set) {
+    $permissions = parent::permissionBuilder($set);
+
+    switch ($set) {
+      case 'store admin':
+      case 'site admin':
+        $permissions[] = 'administer frauds';
+        break;
+    }
+
+    return $permissions;
+  }
+
+  /**
+   * Setup the testing.
+   */
+  function setUp() {
+    $modules = parent::setUpHelper('all');
+    $modules[] = 'commerce_fraud';
+    parent::setUp($modules);
+
+    // User creation for different operations.
+    $this->site_admin = $this->createSiteAdmin();
+    $this->store_admin = $this->createStoreAdmin();
+    $this->store_customer = $this->createStoreCustomer();
+
+    // The rule that sends a mail after checkout completion should be disabled
+    // as it returns an error caused by how mail messages are stored.
+    $rules_config = rules_config_load('commerce_checkout_order_email');
+    $rules_config->active = FALSE;
+    $rules_config->save();
+
+    // Setup a default user name.
+    $this->setRandomName($this->randomName());
+    variable_set('site_default_country', 'US');
+  }
+
+  /**
+   * Tests general functions in commerce fraud.
+   */
+  function testCommerceFraud() {
+    $this->drupalLogin($this->store_admin);
+    $this->createDummyProductDisplayContentType();
+    $product4 = $this->createDummyProduct('PROD-04', 'Product Four', 100, 'USD');
+    $new_order = $this->createDummyOrder(2, array($product4->product_id => 3), 'pending');
+    commerce_fraud_write_record($new_order, 39, 'Description of rule');
+    // Check Order Fraud Score.
+    $fraud_score1 = commerce_fraud_get_fraud_score_for_order_id($new_order->order_id);
+    // Two rules for quantity and price to be fired.
+    $this->assertEqual($fraud_score1, 39);
+    $string1 = commerce_fraud_get_fraud_notes_for_order($new_order->order_id);
+    $this->assertEqual($string1, t('<strong>Total Points: </strong>39<br>Description of rule: 39'));
+    commerce_fraud_reset_fraud_count($new_order);
+    $fraud_score2 = commerce_fraud_get_fraud_score_for_order_id($new_order->order_id);
+    // Two rules for quantity and price to be fired.
+    $this->assertEqual($fraud_score2, 0);
+    $string2 = commerce_fraud_get_fraud_notes_for_order($new_order->order_id);
+    $this->assertEqual($string2, t('No potential fraudulent activity.'));
+  }
+
+}
