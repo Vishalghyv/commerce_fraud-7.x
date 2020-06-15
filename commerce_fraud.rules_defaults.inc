@@ -24,7 +24,7 @@ function commerce_fraud_default_rules_configuration() {
     ))
     ->action('commerce_order_update_status', array(
       'commerce_order:select' => 'commerce_order',
-      'order_status' => 'commerce_order_status_options_list',
+      'order_status' => 'fraudulent',
     ));
   $rules['commerce_fraud_update_order_status'] = $rule;
 
