@@ -1,0 +1,107 @@
+<?php
+
+/**
+ * @file
+ * Unit tests for Commerce Fraud rules.
+ */
+
+/**
+ * Test fraud rules.
+ */
+class CommerceFraudRulesTest extends CommerceBaseTestCase {
+
+  /**
+   * Order.
+   *
+   * @var order
+   */
+  public $order;
+
+  /**
+   * Product.
+   *
+   * @var product
+   */
+  public $product;
+
+  /**
+   * Rules.
+   *
+   * @var rules
+   */
+  public $rules;
+
+  /**
+   * Implementation of getInfo().
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Commerce Fraud Rules',
+      'description' => 'Test the rules provided by the Commerce Fraud module.',
+      'group' => 'Commerce Fraud',
+    );
+  }
+
+  /**
+   * Setup the testing.
+   */
+  protected function setUp() {
+    $modules = $this->setUpHelper('all', array('commerce_fraud'));
+    parent::setUp($modules);
+
+    // User creation for different operations.
+    $this->store_customer = $this->createStoreCustomer();
+
+    // The rule that sends a mail after checkout completion should be disabled
+    // as it returns an error caused by how mail messages are stored.
+    $rules_config = rules_config_load('commerce_checkout_order_email');
+    $rules_config->active = FALSE;
+    $rules_config->save();
+
+    variable_set('site_default_country', 'US');
+
+    // Create order.
+    $this->createDummyProductDisplayContentType();
+    $this->product = $this->createDummyProduct('PROD-04', 'Product Four', 100, 'USD');
+    $this->order = $this->createDummyOrder(2, array($this->product->product_id => 3), 'pending');
+
+    // Rules.
+    $this->rules = commerce_fraud_default_rules_configuration();
+  }
+
+  /**
+   * Overrides CommerceBaseTestCase::permissionBuilder().
+   */
+  protected function permissionBuilder($set) {
+    $permissions = parent::permissionBuilder($set);
+
+    switch ($set) {
+      case 'store admin':
+        $permissions[] = 'administer frauds';
+        break;
+    }
+
+    return $permissions;
+  }
+
+  /**
+   * Tests Anonymous Rule in commerce fraud.
+   */
+  public function testCommerceFraudAnonymousRule() {
+    $this->drupalLogin($this->store_customer);
+    $this->rules['commerce_fraud_anonymous_user']->active = TRUE;
+    $this->rules['commerce_fraud_anonymous_user']->save();
+
+    global $user;
+    $user = user_load(0);
+
+    // To test the Anonymous Rule.
+    $this->order->uid = $user->uid;
+
+    commerce_checkout_complete($this->order);
+
+    $fraud_notes = commerce_fraud_get_fraud_notes_for_order($this->order->order_id);
+    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>Order placed by anonymous user: 5'));
+  }
+
+}

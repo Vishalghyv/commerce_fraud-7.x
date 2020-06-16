@@ -119,5 +119,21 @@ function commerce_fraud_default_rules_configuration() {
     ));
   $rules['commerce_fraud_last_order'] = $rule;
 
+  $rule = rules_reaction_rule();
+  $rule->label = t('Increase fraud score if order is placed by anonymous user');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_anonymous_user', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('Order placed by anonymous user'),
+    ));
+  $rules['commerce_fraud_anonymous_user'] = $rule;
+
   return $rules;
 }

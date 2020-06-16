@@ -116,6 +116,20 @@ function commerce_fraud_rules_condition_info() {
     ),
   );
 
+  $conditions['commerce_fraud_anonymous_user'] = array(
+    'label' => t('Order placed by anonymous user'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_order_is_anonymous',
+    ),
+  );
+
   return $conditions;
 }
 

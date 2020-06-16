@@ -8,14 +8,15 @@
 /**
  * Test fraud rules.
  */
-class CommerceFraudRulesTest extends CommerceBaseTestCase {
+class CommerceFraudTest extends CommerceBaseTestCase {
+
   /**
    * Implementation of getInfo().
    */
   public static function getInfo() {
     return array(
-      'name' => 'Fraud Rules',
-      'description' => 'Test the rules provided by the Commerce Fraud module.',
+      'name' => 'Commerce Fraud',
+      'description' => 'Test Commerce Fraud module features like adding fraud score, fraud notes, resetting fraud count.',
       'group' => 'Commerce Fraud',
     );
   }
@@ -34,6 +35,12 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
     // as it returns an error caused by how mail messages are stored.
     $rules_config = rules_config_load('commerce_checkout_order_email');
     $rules_config->active = FALSE;
+    $rules_config->save();
+
+    // Enable `commerce_fraud_update_order_status` in order to test if orders
+    // that are above a certain threshold can be marked fraudulent.
+    $rules_config = rules_config_load('commerce_fraud_update_order_status');
+    $rules_config->active = TRUE;
     $rules_config->save();
 
     variable_set('site_default_country', 'US');
@@ -63,9 +70,6 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
     $product4 = $this->createDummyProduct('PROD-04', 'Product Four', 100, 'USD');
     $new_order = $this->createDummyOrder(2, array($product4->product_id => 3), 'pending');
     commerce_fraud_write_record($new_order, 39, 'Description of rule');
-    $conditions = commerce_fraud_default_rules_configuration();
-    $conditions['commerce_fraud_update_order_status']->active = TRUE;
-    $conditions['commerce_fraud_update_order_status']->save();
     commerce_checkout_complete($new_order);
     // Check Order Fraud Score.
     $fraud_score = commerce_fraud_get_fraud_score_for_order_id($new_order->order_id);
@@ -73,7 +77,7 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
     $this->assertEqual($fraud_score, 39);
     // Check Order status.
     $status = $new_order->status;
-    $this->assertEqual($status,'fraudulent');
+    $this->assertEqual($status, 'fraudulent');
     $fraud_notes = commerce_fraud_get_fraud_notes_for_order($new_order->order_id);
     $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>39<br>Description of rule: 39'));
     commerce_fraud_reset_fraud_count($new_order);

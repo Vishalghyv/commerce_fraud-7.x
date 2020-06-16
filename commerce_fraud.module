@@ -300,3 +300,14 @@ function commerce_fraud_order_condition_fraud_level_operator_options() {
     'commerce_fraud_is_blacklisted' => 'Blacklisted',
   );
 }
+
+/**
+ * Checks If the order is placed by anonymous user.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_order_is_anonymous($order) {
+  return !$order->uid;
+}

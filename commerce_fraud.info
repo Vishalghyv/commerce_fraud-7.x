@@ -15,3 +15,4 @@ files[] = includes/views/views_handler_commerce_fraud_points.inc
 
 ;Simple Tests
 files[] = tests/commerce_fraud.test
+files[] = tests/commerce_fraud_rules.test
