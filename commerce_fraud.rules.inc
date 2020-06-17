@@ -105,14 +105,14 @@ function commerce_fraud_rules_condition_info() {
         'label' => t('Number of minutes'),
         'type' => 'integer',
       ),
-      'order_statuses' => array(
+      'order_status' => array(
         'label' => t('Order statuses to compare'),
-        'type' => 'list<text>',
+        'type' => 'text',
         'options list' => 'commerce_order_status_options_list',
       ),
     ),
     'callbacks' => array(
-      'execute' => 'commerce_fraud_rules_last_order',
+      'execute' => 'commerce_fraud_last_order',
     ),
   );
 
@@ -221,19 +221,6 @@ function commerce_fraud_rules_user_ip_in_country($countries) {
   }
 
   return strpos($countries, $guessed_country) !== FALSE;
-}
-
-/**
- * Callback for last order condition.
- *
- * @param $order
- * @param $minutes
- * @param $order_statuses
- *
- * @return bool
- */
-function commerce_fraud_rules_last_order($order, $minutes, $order_statuses) {
-  return commerce_fraud_last_order($order, $minutes, $order_statuses);
 }
 
 /**

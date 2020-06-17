@@ -104,4 +104,44 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
     $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>Order placed by anonymous user: 5'));
   }
 
+  /**
+   * Tests Quantity Rule in commerce fraud.
+   */
+  public function testCommerceFraudQuantityRule() {
+    $this->drupalLogin($this->store_customer);
+    $this->order = $this->createDummyOrder(3, array($this->product->product_id => 11), 'pending');
+    $this->rules['commerce_fraud_item_quantity']->active = TRUE;
+    $this->rules['commerce_fraud_item_quantity']->save();
+
+    commerce_checkout_complete($this->order);
+
+    $fraud_notes = commerce_fraud_get_fraud_notes_for_order($this->order->order_id);
+    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>Order has more than 10 products: 5'));
+  }
+
+  /**
+   * Tests Last Order Rule in commerce fraud.
+   */
+  public function testCommerceFraudLastOrderRule() {
+    $this->drupalLogin($this->store_customer);
+    $old_order = $this->createDummyOrder(3, array($this->product->product_id => 2), 'completed');
+    $this->rules['commerce_fraud_last_order']->active = TRUE;
+    $this->rules['commerce_fraud_last_order']->save();
+
+    $date = new DateTimeImmutable();
+    $date = $date->modify('- 3 minutes');
+    $old_order->created = $date->getTimestamp();
+
+    $new_user = user_load(1);
+
+    $this->order->uid = $new_user->uid;
+    $old_order->uid = $new_user->uid;
+
+    commerce_order_save($old_order);
+    commerce_checkout_complete($this->order);
+
+    $fraud_notes = commerce_fraud_get_fraud_notes_for_order($this->order->order_id);
+    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>Previous order completed within 5 minutes: 5'));
+  }
+
 }
