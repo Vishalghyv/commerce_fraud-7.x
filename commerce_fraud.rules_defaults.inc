@@ -36,7 +36,7 @@ function commerce_fraud_default_rules_configuration() {
     ->event('commerce_checkout_complete')
     ->condition('commerce_order_compare_total_product_quantity', array(
       'commerce_order:select' => 'commerce_order',
-      'operator' => '<',
+      'operator' => '>',
       'value' => 10,
     ))
     ->action('commerce_fraud_increase_fraud_count', array(
@@ -110,7 +110,7 @@ function commerce_fraud_default_rules_configuration() {
     ->condition('commerce_fraud_last_order', array(
       'commerce_order:select' => 'commerce-order',
       'minutes' => '5',
-      'order_statuses:select' => array('completed'),
+      'order_status' => array('completed'),
     ))
     ->action('commerce_fraud_increase_fraud_count', array(
       'commerce_order:select' => 'commerce_order',
