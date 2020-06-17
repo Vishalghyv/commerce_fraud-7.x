@@ -127,7 +127,7 @@ function commerce_fraud_last_order($order, $minutes, $order_statuses = array('co
     ->fields('o', array('order_id'))
     ->condition('uid', $order->uid)
     ->condition('status', $order_statuses, 'IN')
-    ->condition('created', commerce_fraud_timestamp_from_minutes($minutes), '>=');
+    ->condition('created', time() - ($minutes * 60), '>=');
 
   return !empty($query->execute()->fetchAssoc());
 }
