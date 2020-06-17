@@ -311,3 +311,60 @@ function commerce_fraud_order_condition_fraud_level_operator_options() {
 function commerce_fraud_order_is_anonymous($order) {
   return !$order->uid;
 }
+
+/**
+ * Checks if order was made with a previously fraudulent email.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_email($order) {
+  if (!isset($order->mail)) {
+    return FALSE;
+  }
+  $mail = $order->mail;
+  $query = db_select('commerce_order', 'o')
+    ->fields('o', array('order_id'))
+    ->condition('status', array('fraudulent'), 'IN')
+    ->condition('mail', $mail, '=');
+  return !empty($query->execute()->fetchAssoc());
+}
+
+/**
+ * Checks if order was made with a previously fraudulent user id.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_uid($order) {
+  if (!isset($order->uid)) {
+    return FALSE;
+  }
+  $uid = $order->uid;
+  $query = db_select('commerce_order', 'o')
+    ->fields('o', array('order_id'))
+    ->condition('status', array('fraudulent'), 'IN')
+    ->condition('uid', $uid, '=');
+  return !empty($query->execute()->fetchAssoc());
+}
+
+/**
+ * Checks if order was made with a previously fraudulent hostname.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_hostname($order) {
+  if (!isset($order->hostname)) {
+    return FALSE;
+  }
+  $hostname = $order->hostname;
+  $query = db_select('commerce_order', 'o')
+    ->fields('o', array('order_id'))
+    ->condition('status', array('fraudulent'), 'IN')
+    ->condition('hostname', $hostname, '=');
+  return !empty($query->execute()->fetchAssoc());
+}

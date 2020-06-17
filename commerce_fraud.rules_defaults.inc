@@ -135,5 +135,53 @@ function commerce_fraud_default_rules_configuration() {
     ));
   $rules['commerce_fraud_anonymous_user'] = $rule;
 
+  $rule = rules_reaction_rule();
+  $rule->label = t('Check Email with fraudulent order');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_email', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('Email is same as one of fraudulent orders'),
+    ));
+  $rules['commerce_fraud_check_email'] = $rule;
+
+  $rule = rules_reaction_rule();
+  $rule->label = t('Check Uid with fraudulent order');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_uid', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('Uid is same as one of fraudulent orders'),
+    ));
+  $rules['commerce_fraud_check_uid'] = $rule;
+
+  $rule = rules_reaction_rule();
+  $rule->label = t('Check Ip address with fraudulent order');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_hostname', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('Ip address is same as one of fraudulent orders'),
+    ));
+  $rules['commerce_fraud_check_hostname'] = $rule;
+
   return $rules;
 }

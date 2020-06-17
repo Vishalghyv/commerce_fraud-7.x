@@ -130,6 +130,48 @@ function commerce_fraud_rules_condition_info() {
     ),
   );
 
+  $conditions['commerce_fraud_email'] = array(
+    'label' => t('Compares if order was made with a previously fraudulent email'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_email',
+    ),
+  );
+
+  $conditions['commerce_fraud_uid'] = array(
+    'label' => t('Compares if order was made with a previously fraudulent user id'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_uid',
+    ),
+  );
+
+  $conditions['commerce_fraud_hostname'] = array(
+    'label' => t('Compares if order was made with a previously fraudulent hostname'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_hostname',
+    ),
+  );
+
   return $conditions;
 }
 
