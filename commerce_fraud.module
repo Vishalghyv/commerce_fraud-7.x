@@ -368,3 +368,24 @@ function commerce_fraud_check_hostname($order) {
     ->condition('hostname', $hostname, '=');
   return !empty($query->execute()->fetchAssoc());
 }
+
+/**
+ * Checks if User have placed orders with different IP.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_user_ip($order) {
+
+  $orders_count = db_select('commerce_order', 'o')
+    ->fields('o', array('hostname'))
+    ->condition('uid', $order->uid)
+    ->condition('hostname', array($order->hostname), 'NOT IN')
+    ->distinct()
+    ->countQuery()
+    ->execute()
+    ->fetchField();
+
+  return (bool) $orders_count;
+}

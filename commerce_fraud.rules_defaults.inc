@@ -168,7 +168,7 @@ function commerce_fraud_default_rules_configuration() {
   $rules['commerce_fraud_check_uid'] = $rule;
 
   $rule = rules_reaction_rule();
-  $rule->label = t('Check Ip address with fraudulent order');
+  $rule->label = t('Check IP address with fraudulent order');
   $rule->tags = array('Commerce Fraud');
   $rule->active = FALSE;
   $rule
@@ -179,9 +179,25 @@ function commerce_fraud_default_rules_configuration() {
     ->action('commerce_fraud_increase_fraud_count', array(
       'commerce_order:select' => 'commerce_order',
       'counter' => 5,
-      'description' => t('Ip address is same as one of fraudulent orders'),
+      'description' => t('IP address is same as one of fraudulent orders'),
     ));
   $rules['commerce_fraud_check_hostname'] = $rule;
+
+  $rule = rules_reaction_rule();
+  $rule->label = t('Increase fraud score if user has placed orders from different IP addresses');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_ip', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('User have placed orders from different IP address'),
+    ));
+  $rules['commerce_fraud_check_ip'] = $rule;
 
   return $rules;
 }

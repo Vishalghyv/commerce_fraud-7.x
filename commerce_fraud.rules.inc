@@ -172,6 +172,20 @@ function commerce_fraud_rules_condition_info() {
     ),
   );
 
+  $conditions['commerce_fraud_ip'] = array(
+    'label' => t('If user has placed orders from different IP addresses'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_user_ip',
+    ),
+  );
+
   return $conditions;
 }
 

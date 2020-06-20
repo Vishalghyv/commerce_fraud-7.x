@@ -201,7 +201,31 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
     commerce_checkout_complete($this->order);
 
     $fraud_notes = commerce_fraud_get_fraud_notes_for_order($this->order->order_id);
-    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>Ip address is same as one of fraudulent orders: 5'));
+    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>IP address is same as one of fraudulent orders: 5'));
+  }
+
+  /**
+   * Tests Checks IP rule in commerce fraud.
+   */
+  public function testCommerceFraudCheckIpRule() {
+    $this->drupalLogin($this->store_customer);
+    $new_order = $this->createDummyOrder(3, array($this->product->product_id => 2), 'fraudulent');
+    $this->rules['commerce_fraud_check_ip']->active = TRUE;
+    $this->rules['commerce_fraud_check_ip']->save();
+
+    $user = user_load(2);
+
+    $new_order->hostname = $this->randomName(10);
+    $this->order->hostname = $this->randomName(10);
+
+    $new_order->uid = $user->uid;
+    $this->order->uid = $user->uid;
+
+    commerce_order_save($new_order);
+    commerce_checkout_complete($this->order);
+
+    $fraud_notes = commerce_fraud_get_fraud_notes_for_order($this->order->order_id);
+    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>User have placed orders from different IP address: 5'));
   }
 
 }
