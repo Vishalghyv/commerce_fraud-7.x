@@ -228,4 +228,29 @@ class CommerceFraudRulesTest extends CommerceBaseTestCase {
     $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>User have placed orders from different IP address: 5'));
   }
 
+  /**
+   * Tests Po Box rule in commerce fraud.
+   */
+  public function testCommerceFraudPoRule() {
+    $this->drupalLogin($this->store_customer);
+
+    $this->rules['commerce_fraud_has_po_box']->active = TRUE;
+    $this->rules['commerce_fraud_has_po_box']->save();
+
+    // Create new Shipping profile.
+    $profileShip = commerce_customer_profile_new('shipping');
+    // This is to test PO BOX Rule.
+    $profileShip->commerce_customer_address[LANGUAGE_NONE][0]['thoroughfare'] = 'Check for po box 123 in shipping address';
+    // Saving new profile.
+    commerce_customer_profile_save($profileShip);
+
+    // Adding Shipping Profile.
+    $this->order->commerce_customer_shipping[LANGUAGE_NONE][0]['profile_id'] = $profileShip->profile_id;
+
+    commerce_checkout_complete($this->order);
+
+    $fraud_notes = commerce_fraud_get_fraud_notes_for_order($this->order->order_id);
+    $this->assertEqual($fraud_notes, t('<strong>Total Points: </strong>5<br>Shipping Address has po box: 5'));
+  }
+
 }

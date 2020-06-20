@@ -88,4 +88,34 @@ class CommerceFraudTest extends CommerceBaseTestCase {
     $this->assertEqual($fraud_notes, t('No potential fraudulent activity.'));
   }
 
+  /**
+   * Tests Checks Po Box address using Regex.
+   */
+  public function testCommerceFraudPoBoxAddressRegex() {
+    $tests = array(
+      array('address' => 'PO Box 123', 'result' => TRUE),
+      array('address' => 'P.O. Box 123', 'result' => TRUE),
+      array('address' => 'PO 123', 'result' => TRUE),
+      array('address' => 'Post Office Box 123', 'result' => TRUE),
+      array('address' => 'P.O 123', 'result' => TRUE),
+      array('address' => 'Box 123', 'result' => TRUE),
+      array('address' => '#123', 'result' => FALSE),
+      array('address' => '123', 'result' => FALSE),
+      array('address' => 'POB 123', 'result' => TRUE),
+      array('address' => 'P.O.B 123', 'result' => TRUE),
+      array('address' => 'P.O.B. 123', 'result' => FALSE),
+      array('address' => 'Post 123', 'result' => TRUE),
+      array('address' => 'Post Box 123', 'result' => TRUE),
+      array('address' => '123 Box street', 'result' => FALSE),
+      array('address' => 'PB. 123', 'result' => TRUE),
+      array('address' => 'P O B 123', 'result' => TRUE),
+      array('address' => 'Post 123', 'result' => TRUE),
+      array('address' => 'Post 12b3', 'result' => FALSE),
+      array('address' => '123 Box street', 'result' => FALSE),
+    );
+    foreach ($tests as $test) {
+      $this->assertEqual($test['result'], commerce_fraud_contains_po_box($test['address']));
+    }
+  }
+
 }

@@ -283,9 +283,28 @@ function commerce_fraud_is_blacklisted($order) {
  * @return bool
  */
 function commerce_fraud_order_has_pobox($order) {
-  $order_wrapper = entity_metadata_wrapper('commerce_order', $order);
-  $shipping_address = $order_wrapper->commerce_customer_shipping->commerce_customer_address;
-  return preg_match("/(p(.*)?o(.*?)?)(\s+)?(bo?x)?(\s+)?[#]?(\d+)?/i", $shipping_address->thoroughfare->value());
+  if (!isset($order->commerce_customer_shipping)) {
+    return FALSE;
+  }
+  $profile = commerce_customer_profile_load($order->commerce_customer_shipping[LANGUAGE_NONE][0]['profile_id']);
+
+  $thoroughfare = $profile->commerce_customer_address[LANGUAGE_NONE][0]['thoroughfare'] ?? '';
+
+  $premise = $profile->commerce_customer_address[LANGUAGE_NONE][0]['premise'] ?? '';
+
+  return commerce_fraud_contains_po_box($thoroughfare) || commerce_fraud_contains_po_box($premise);
+}
+
+/**
+ * Checks the string for PO Box.
+ *
+ * @param address
+ *
+ * @return bool
+ */
+function commerce_fraud_contains_po_box($address) {
+
+  return preg_match("/\s*((?:P(?:OST)?.?\s*(?:O(?:FF(?:ICE)?)?)?.?\s*(?:B(?:IN|OX)?)?)+|(?:B(?:IN|OX)+\s+)+)\s*\d+\s*(^|\s|$)/i", $address);
 }
 
 /**
