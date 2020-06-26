@@ -49,19 +49,6 @@ function commerce_fraud_rules_condition_info() {
       'execute' => 'commerce_fraud_rules_compare_fraud_level',
     ),
   );
-  $conditions['commerce_fraud_blacklisted'] = array(
-    'label' => t('Order is black listed'),
-    'group' => t('Commerce Fraud'),
-    'parameter' => array(
-      'commerce_order' => array(
-        'label' => t('The commerce order'),
-        'type' => 'commerce_order',
-      ),
-    ),
-    'callbacks' => array(
-      'execute' => 'commerce_fraud_rules_is_blacklisted',
-    ),
-  );
 
   $conditions['commerce_fraud_has_po_box'] = array(
     'label' => t('Order shipping address has po box'),
@@ -114,9 +101,18 @@ function commerce_fraud_rules_condition_info() {
         'label' => t('The current commerce order'),
         'type' => 'commerce_order',
       ),
+      'minutes' => array(
+        'label' => t('Number of minutes'),
+        'type' => 'integer',
+      ),
+      'order_status' => array(
+        'label' => t('Order statuses to compare'),
+        'type' => 'text',
+        'options list' => 'commerce_order_status_options_list',
+      ),
     ),
     'callbacks' => array(
-      'execute' => 'commerce_fraud_rules_last_order',
+      'execute' => 'commerce_fraud_last_order',
     ),
   );
 
@@ -130,7 +126,63 @@ function commerce_fraud_rules_condition_info() {
       ),
     ),
     'callbacks' => array(
-      'execute' => 'commerce_fraud_order_anonymous',
+      'execute' => 'commerce_fraud_order_is_anonymous',
+    ),
+  );
+
+  $conditions['commerce_fraud_email'] = array(
+    'label' => t('Compares if order was made with a previously fraudulent email'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_email',
+    ),
+  );
+
+  $conditions['commerce_fraud_uid'] = array(
+    'label' => t('Compares if order was made with a previously fraudulent user id'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_uid',
+    ),
+  );
+
+  $conditions['commerce_fraud_hostname'] = array(
+    'label' => t('Compares if order was made with a previously fraudulent hostname'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_hostname',
+    ),
+  );
+
+  $conditions['commerce_fraud_ip'] = array(
+    'label' => t('If user has placed orders from different IP addresses'),
+    'group' => t('Commerce Fraud'),
+    'parameter' => array(
+      'commerce_order' => array(
+        'label' => t('The current commerce order'),
+        'type' => 'commerce_order',
+      ),
+    ),
+    'callbacks' => array(
+      'execute' => 'commerce_fraud_check_user_ip',
     ),
   );
 
@@ -157,17 +209,6 @@ function commerce_fraud_rules_is_whitelisted($order) {
  */
 function commerce_fraud_rules_is_greylisted($order) {
   return commerce_fraud_is_greylisted($order);
-}
-
-/**
- * BlackList condition callback.
- *
- * @param $order
- *
- * @return bool
- */
-function commerce_fraud_blacklist_email($order) {
-  return commerce_fraud_blacklist_send_email($order);
 }
 
 /**
@@ -239,24 +280,7 @@ function commerce_fraud_rules_user_ip_in_country($countries) {
 }
 
 /**
- * Callback for last order condition.
- *
- * @param $order
- * @param $minutes
- * @param $order_statuses
- *
- * @return bool
- */
-function commerce_fraud_rules_last_order($order) {
-  $minutes = 5;
-  debug($order);
-  return commerce_fraud_last_order($order, $minutes);
-}
-
-/**
  * Implements hook_rules_action_info().
- *
- * @return array
  */
 function commerce_fraud_rules_action_info() {
   $actions = array();
@@ -273,7 +297,7 @@ function commerce_fraud_rules_action_info() {
         'type' => 'integer',
         'label' => t('The counter'),
         'description' => t('Defines by how much the fraud count is increased.'),
-        'default value' => 20,
+        'default value' => 1,
       ),
       'description' => array(
         'type' => 'text',
@@ -324,21 +348,6 @@ function commerce_fraud_rules_action_info() {
     ),
     'callbacks' => array(
       'execute' => 'commerce_fraud_rules_reset_fraud_count',
-    ),
-    'access callback' => 'commerce_order_rules_access',
-  );
-  $actions['email'] = array(
-    'label' => t('Send fraud orders email'),
-    'group' => t('Commerce Fraud'),
-    'parameter' => array(
-      'commerce_order' => array(
-        'label' => t('The current commerce order'),
-        'type' => 'commerce_order',
-      ),
-    ),
-    'configurable' => FALSE,
-    'callbacks' => array(
-      'execute' => 'commerce_fraud_blacklist_email',
     ),
     'access callback' => 'commerce_order_rules_access',
   );

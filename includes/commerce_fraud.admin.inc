@@ -12,8 +12,13 @@ function commerce_fraud_admin_settings() {
   $form = array();
 
   /*=========Caps========*/
+  $form['commerce_fraud_caps'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#title' => t('Commerce Fraud Caps Settings'),
+  );
 
-  $form['commerce_fraud_greylist_cap'] = array(
+  $form['commerce_fraud_caps']['commerce_fraud_greylist_cap'] = array(
     '#type' => 'textfield',
     '#title' => t('Greylist cap'),
     '#description' => t('If an order has a fraud score greater than the number specified, it will be considered greylisted.'),
@@ -21,7 +26,7 @@ function commerce_fraud_admin_settings() {
     '#element_validate' => array('element_validate_integer'),
   );
 
-  $form['commerce_fraud_blacklist_cap'] = array(
+  $form['commerce_fraud_caps']['commerce_fraud_blacklist_cap'] = array(
     '#type' => 'textfield',
     '#title' => t('Blacklist cap'),
     '#description' => t('If an order has a fraud score greater than the number specified, it will be considered blacklisted.'),
@@ -29,7 +34,7 @@ function commerce_fraud_admin_settings() {
     '#element_validate' => array('element_validate_integer'),
   );
 
-  return system_settings_form($form);;
+  return system_settings_form($form);
 }
 
 /**
@@ -39,6 +44,6 @@ function commerce_fraud_admin_settings_validate($form, &$form_state) {
   $greyListValue = $form_state['values']['commerce_fraud_greylist_cap'];
   $blackListValue = $form_state['values']['commerce_fraud_blacklist_cap'];
   if ($greyListValue >= $blackListValue) {
-    form_set_error('commerce_fraud_greylist_cap', t('Grey List value cannot be equal to or more than Black List value'));
+    form_set_error('commerce_fraud_caps][commerce_fraud_greylist_cap', t('Grey List value cannot be equal to or more than Black List value'));
   }
 }

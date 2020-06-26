@@ -56,6 +56,11 @@ function commerce_fraud_permission() {
       'description' => t('Allows users to configure the Commerce Fraud settings.'),
       'restrict access' => TRUE,
     ),
+    'view order fraud notes' => array(
+      'title' => t('View order fraud notes'),
+      'description' => t('Allows users to view fraud notes for orders they have access to.'),
+      'restrict access' => TRUE,
+    ),
   );
 }
 
@@ -84,6 +89,10 @@ function commerce_fraud_views_api() {
  */
 function commerce_fraud_entity_view_alter(&$build, $type) {
   if ($type == 'commerce_order') {
+    if (!user_access('view order fraud notes')) {
+      return;
+    }
+
     $breakdown = array(
       '#prefix' => '<div class="field"><div class="field-label">' . t('Fraud Information: ') . '</div><div class="field-items">',
       '#suffix' => '</div></div>',
@@ -114,29 +123,13 @@ function commerce_fraud_theme_registry_alter(&$theme_registry) {
  * @return bool
  */
 function commerce_fraud_last_order($order, $minutes, $order_statuses = array('completed')) {
-
-  debug(commerce_fraud_timestamp_from_minutes($minutes));
   $query = db_select('commerce_order', 'o')
     ->fields('o', array('order_id'))
     ->condition('uid', $order->uid)
     ->condition('status', $order_statuses, 'IN')
     ->condition('created', commerce_fraud_timestamp_from_minutes($minutes), '>=');
-  debug($query);
 
   return !empty($query->execute()->fetchAssoc());
-}
-
-/**
- *
- */
-function commerce_fraud_blacklist_send_email($order) {
-  if (commerce_fraud_is_blacklisted($order)) {
-    $from = 'test@gmail.com';
-    $to = 'test@gmail.com';
-    $subject = 'Blacklisted Order';
-    $body = commerce_fraud_get_fraud_notes_for_order($order->order_id);
-    simple_mail_queue($from, $to, $subject, $body);
-  }
 }
 
 /**
@@ -283,22 +276,6 @@ function commerce_fraud_is_blacklisted($order) {
 }
 
 /**
- *
- */
-function commerce_fraud_order_anonymous($order) {
-  if ($order->uid == 0) {
-    return TRUE;
-  }
-  elseif (!$order->uid) {
-    return TRUE;
-  }
-  else {
-    return FALSE;
-  }
-
-}
-
-/**
  * Checks the street address for a PO Box.
  *
  * @param $order
@@ -306,19 +283,28 @@ function commerce_fraud_order_anonymous($order) {
  * @return bool
  */
 function commerce_fraud_order_has_pobox($order) {
+  if (!isset($order->commerce_customer_shipping)) {
+    return FALSE;
+  }
+  $profile = commerce_customer_profile_load($order->commerce_customer_shipping[LANGUAGE_NONE][0]['profile_id']);
 
-  $wrapper = entity_metadata_wrapper('commerce_order', $order);
-  $shipping_address = $wrapper->commerce_customer_shipping->commerce_customer_address->value();
-  $address1 = $shipping_address['thoroughfare'];
-  debug($address1);
-  $address2 = $shipping_address['premise'];
-  debug($address2);
-  if (preg_match("/^\s*((?:P(?:OST)?.?\s*(?:O(?:FF(?:ICE)?)?)?.?\s*(?:B(?:IN|OX)?)+)+|(?:B(?:IN|OX)+\s+)+)\s*\d+/i", $address1)) {
-    return TRUE;
-  }
-  else {
-    return preg_match("/^\s*((?:P(?:OST)?.?\s*(?:O(?:FF(?:ICE)?)?)?.?\s*(?:B(?:IN|OX)?)+)+|(?:B(?:IN|OX)+\s+)+)\s*\d+/i", $address2);
-  }
+  $thoroughfare = $profile->commerce_customer_address[LANGUAGE_NONE][0]['thoroughfare'] ?? '';
+
+  $premise = $profile->commerce_customer_address[LANGUAGE_NONE][0]['premise'] ?? '';
+
+  return commerce_fraud_contains_po_box($thoroughfare) || commerce_fraud_contains_po_box($premise);
+}
+
+/**
+ * Checks the string for PO Box.
+ *
+ * @param address
+ *
+ * @return bool
+ */
+function commerce_fraud_contains_po_box($address) {
+
+  return preg_match("/\s*((?:P(?:OST)?.?\s*(?:O(?:FF(?:ICE)?)?)?.?\s*(?:B(?:IN|OX)?)?)+|(?:B(?:IN|OX)+\s+)+)\s*\d+\s*(^|\s|$)/i", $address);
 }
 
 /**
@@ -332,4 +318,93 @@ function commerce_fraud_order_condition_fraud_level_operator_options() {
     'commerce_fraud_is_greylisted' => 'Greylisted',
     'commerce_fraud_is_blacklisted' => 'Blacklisted',
   );
+}
+
+/**
+ * Checks If the order is placed by anonymous user.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_order_is_anonymous($order) {
+  return !$order->uid;
+}
+
+/**
+ * Checks if order was made with a previously fraudulent email.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_email($order) {
+  if (!isset($order->mail)) {
+    return FALSE;
+  }
+  $mail = $order->mail;
+  $query = db_select('commerce_order', 'o')
+    ->fields('o', array('order_id'))
+    ->condition('status', array('fraudulent'), 'IN')
+    ->condition('mail', $mail, '=');
+  return !empty($query->execute()->fetchAssoc());
+}
+
+/**
+ * Checks if order was made with a previously fraudulent user id.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_uid($order) {
+  if (!isset($order->uid)) {
+    return FALSE;
+  }
+  $uid = $order->uid;
+  $query = db_select('commerce_order', 'o')
+    ->fields('o', array('order_id'))
+    ->condition('status', array('fraudulent'), 'IN')
+    ->condition('uid', $uid, '=');
+  return !empty($query->execute()->fetchAssoc());
+}
+
+/**
+ * Checks if order was made with a previously fraudulent hostname.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_hostname($order) {
+  if (!isset($order->hostname)) {
+    return FALSE;
+  }
+  $hostname = $order->hostname;
+  $query = db_select('commerce_order', 'o')
+    ->fields('o', array('order_id'))
+    ->condition('status', array('fraudulent'), 'IN')
+    ->condition('hostname', $hostname, '=');
+  return !empty($query->execute()->fetchAssoc());
+}
+
+/**
+ * Checks if User have placed orders with different IP.
+ *
+ * @param $order
+ *
+ * @return bool
+ */
+function commerce_fraud_check_user_ip($order) {
+
+  $orders_count = db_select('commerce_order', 'o')
+    ->fields('o', array('hostname'))
+    ->condition('uid', $order->uid)
+    ->condition('hostname', array($order->hostname), 'NOT IN')
+    ->distinct()
+    ->countQuery()
+    ->execute()
+    ->fetchField();
+
+  return (bool) $orders_count;
 }

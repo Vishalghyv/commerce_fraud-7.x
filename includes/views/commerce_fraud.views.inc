@@ -19,7 +19,7 @@ function commerce_fraud_views_data() {
     'title' => t('Commerce Fraud Level'),
     'help' => t('Shows the fraud level.'),
     'field' => array(
-      'handler' => 'CommerceFraudViewsHandlerLevel',
+      'handler' => 'views_handler_commerce_fraud_level',
     ),
   );
 
@@ -27,7 +27,7 @@ function commerce_fraud_views_data() {
     'title' => t('Commerce Fraud Points'),
     'help' => t('Shows breakdown of points accumulated on the order.'),
     'field' => array(
-      'handler' => 'CommerceFraudViewsHandlerPoints',
+      'handler' => 'views_handler_commerce_fraud_points',
     ),
   );
 

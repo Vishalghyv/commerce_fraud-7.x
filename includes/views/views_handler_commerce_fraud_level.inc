@@ -10,7 +10,7 @@
  *
  * @group views_field_handlers
  */
-class CommerceFraudViewsHandlerLevel extends views_handler_field {
+class views_handler_commerce_fraud_level extends views_handler_field {
 
   /**
    * {@inheritdoc}

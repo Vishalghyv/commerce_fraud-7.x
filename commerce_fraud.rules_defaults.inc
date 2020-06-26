@@ -24,25 +24,9 @@ function commerce_fraud_default_rules_configuration() {
     ))
     ->action('commerce_order_update_status', array(
       'commerce_order:select' => 'commerce_order',
-      'order_status' => 'commerce_order_status_options_list',
+      'order_status' => 'fraudulent',
     ));
   $rules['commerce_fraud_update_order_status'] = $rule;
-  if (module_exists('simple_mail')) {
-    $rule = rules_reaction_rule();
-    $rule->label = t('Email black listed orders');
-    $rule->tags = array('Commerce Fraud');
-    $rule->active = FALSE;
-    $rule
-      ->event('commerce_checkout_complete')
-      ->condition('commerce_fraud_blacklisted', array(
-        'commerce_order:select' => 'commerce_order',
-        'commerce_fraud_level_function' => 'commerce_fraud_is_blacklisted',
-      ))
-      ->action('email', array(
-        'commerce_order:select' => 'commerce_order',
-      ));
-    $rules['commerce_fraud_email_blacklist'] = $rule;
-  }
 
   $rule = rules_reaction_rule();
   $rule->label = t('Increase fraud score if order has x amount of products.');
@@ -88,7 +72,6 @@ function commerce_fraud_default_rules_configuration() {
     ->event('commerce_checkout_complete')
     ->condition('commerce_fraud_has_po_box', array(
       'commerce_order:select' => 'commerce_order',
-      'commerce_fraud_po_box_function' => 'commerce_fraud_order_has_pobox',
     ))
     ->action('commerce_fraud_increase_fraud_count', array(
       'commerce_order:select' => 'commerce_order',
@@ -116,9 +99,28 @@ function commerce_fraud_default_rules_configuration() {
       'counter' => 5,
       'description' => t('Order is greater than $500.00'),
     ));
-  $rules['commerce_fraud_anonymous_user'] = $rule;
+  $rules['commerce_fraud_order_total'] = $rule;
+
   $rule = rules_reaction_rule();
-  $rule->label = t('Increase fraud score if user is anonymous');
+  $rule->label = t('Increase fraud score for orders placed within x minutes');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_last_order', array(
+      'commerce_order:select' => 'commerce-order',
+      'minutes' => '5',
+      'order_status' => array('completed'),
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('Previous order completed within 5 minutes'),
+    ));
+  $rules['commerce_fraud_last_order'] = $rule;
+
+  $rule = rules_reaction_rule();
+  $rule->label = t('Increase fraud score if order is placed by anonymous user');
   $rule->tags = array('Commerce Fraud');
   $rule->active = FALSE;
   $rule
@@ -129,25 +131,73 @@ function commerce_fraud_default_rules_configuration() {
     ->action('commerce_fraud_increase_fraud_count', array(
       'commerce_order:select' => 'commerce_order',
       'counter' => 5,
-      'description' => t('Order User anonymous'),
+      'description' => t('Order placed by anonymous user'),
     ));
   $rules['commerce_fraud_anonymous_user'] = $rule;
 
   $rule = rules_reaction_rule();
-  $rule->label = t('Increase fraud score for orders placed within x minutes');
+  $rule->label = t('Check Email with fraudulent order');
   $rule->tags = array('Commerce Fraud');
   $rule->active = FALSE;
   $rule
     ->event('commerce_checkout_complete')
-    ->condition('commerce_fraud_last_order', array(
+    ->condition('commerce_fraud_email', array(
       'commerce_order:select' => 'commerce-order',
     ))
     ->action('commerce_fraud_increase_fraud_count', array(
       'commerce_order:select' => 'commerce_order',
       'counter' => 5,
-      'description' => t('Previous order completed within 5 minutes'),
+      'description' => t('Email is same as one of fraudulent orders'),
     ));
-  $rules['commerce_fraud_last_order'] = $rule;
+  $rules['commerce_fraud_check_email'] = $rule;
+
+  $rule = rules_reaction_rule();
+  $rule->label = t('Check Uid with fraudulent order');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_uid', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('Uid is same as one of fraudulent orders'),
+    ));
+  $rules['commerce_fraud_check_uid'] = $rule;
+
+  $rule = rules_reaction_rule();
+  $rule->label = t('Check IP address with fraudulent order');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_hostname', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('IP address is same as one of fraudulent orders'),
+    ));
+  $rules['commerce_fraud_check_hostname'] = $rule;
+
+  $rule = rules_reaction_rule();
+  $rule->label = t('Increase fraud score if user has placed orders from different IP addresses');
+  $rule->tags = array('Commerce Fraud');
+  $rule->active = FALSE;
+  $rule
+    ->event('commerce_checkout_complete')
+    ->condition('commerce_fraud_ip', array(
+      'commerce_order:select' => 'commerce-order',
+    ))
+    ->action('commerce_fraud_increase_fraud_count', array(
+      'commerce_order:select' => 'commerce_order',
+      'counter' => 5,
+      'description' => t('User have placed orders from different IP address'),
+    ));
+  $rules['commerce_fraud_check_ip'] = $rule;
 
   return $rules;
 }
